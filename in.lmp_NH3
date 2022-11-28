@@ -1,0 +1,153 @@
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Defining the simulation and providing the data file <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+variable        NAME index 628_nomin    # The name of the job. Change it as you like but keep it simple, descriptive and without unnecessary special characters.
+log             ${NAME}.log                         # A way of specifying the name of the log file.
+variable        infile index NH3_CHA.data   # The name of the (edited) data file at the correct/desired density for your simulation.
+                                                     
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Simulation settings <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+units		    real                # This units type uses fs for time and Angstroms for length. You can check the LAMMPS manual for more details
+atom_style	    full                # This tells LAMMPS how the atoms are defined in the input data file
+boundary        p p p               # periodic box in x, y and z
+pair_style	    lj/cut    12.0         
+pair_modify     tail yes            # This applies tail corrections as taught in class
+pair_modify     mix arithmetic      # This implements the Lorentz-Berthelot pair interactions between dissimilar atom types as taught in class
+
+# The settings below are additional settings you must add for your ethanol simulation as already detailed in your example NPT LAMMPS script in the tutorial
+# For your ethanol homework, change/edit the pair_style line as advised above and uncomment the extra settings below and you should be good to go for this section.
+
+#special_bonds   lj/coul 0.0 0.0 0.5
+#kspace_style    ewald 0.0001
+bond_style      harmonic
+angle_style     harmonic
+#dihedral_style  opls
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>> Using the variable command in LAMMPS to define a variety of inputs/settings for the simulation <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+# Specifying the temperature for desired state point to be simulated
+variable   simulationTemp  index 628     # This sets the simulation temperature. You should change this to a value that defines the state point you want to simulate
+variable   simulationPress  index 0.987 
+
+# Output files frequencies
+variable        dumpfreq   index 1000          # The output frequency of dump information to dump files
+variable        thermofreq index 1000          # The output frequency of property information to log files
+variable        printfreq  index 1000          # The output frequency of information to be printed to a separate output file. Useful for making plots to check equilibration
+variable        restartfreq index 1000000      # The output frequency of restart files
+
+
+# Simulation run times for the various parts of the simulation (equilibration and production)
+variable        NVT_equib  index 500000      # Equilibration run length (in timesteps) This is much longer than required for Argon but this may be required for ethanol
+variable        NVT_prod   index 500000      # Simulation run length  (in timesteps)   This is much longer than required for Argon but this may be required for ethanol
+
+
+# Defining properties to output
+variable    step        equal step        # The first expression after the 'variable' command is a user defined name for the variable, it can be anything
+variable    density     equal density     # The expression after the 'equal' keyword are LAMMPS special/reserved terms for those properties.
+variable    temp        equal temp
+variable    press       equal press
+variable    ke          equal ke
+variable    pe          equal pe
+variable    etotal      equal etotal
+variable    enthalpy    equal enthalpy
+
+
+# >>>>>>>>>>> Reading data, Neighbor list settings, energy minimization, assigning initial velocities & specifying thermodynamic property output style to log files <<<<<<<<<
+
+
+read_data	    NH3_CHA.data                 # Recall that we earlier defined a varaible called 'infile' at the beginning of this script.
+                                          # The read_data command tells LAMMPS to read in information of our system setup (the data file) from the variable 'infile'
+pair_coeff 	1 1 0 0
+pair_coeff 	1 2 0 0
+pair_coeff 	1 3 0 0
+pair_coeff 	1 4 0 0
+pair_coeff 	1 5 0 0
+pair_coeff 	1 6 0 0
+pair_coeff 	2 2 0 0
+pair_coeff 	2 3 .14474 3.07075
+pair_coeff 	2 4 0 0
+pair_coeff 	2 5 0 0
+pair_coeff 	2 6 0 0
+pair_coeff 	3 3 0 0
+pair_coeff 	3 4 0 0
+pair_coeff 	3 5 0 0
+pair_coeff 	3 6 0 0
+pair_coeff 	4 4 0 0
+pair_coeff 	4 5 0 0
+pair_coeff 	4 6 0 0
+pair_coeff 	5 5 0 0
+pair_coeff 	5 6 0 0
+pair_coeff 	6 6 0 0
+
+neighbor        1.0 bin
+neigh_modify    delay 0 every 1 check yes page 1000000 one 20000
+timestep        1.0
+
+
+#minimize        1e-4 1e-6 10000 100000        # It is generally advised to energy minimize your system before creating velocities
+
+velocity	    all create ${simulationTemp} 696969 mom yes rot yes dist gaussian
+
+# The 'velocity' command line above assigns initial velocities to the atoms in our data file, see the LAMMPS 'velocity' command
+# The number '886874' is the seed number which helps LAMMPS to consistently assign the same randomized velocities for the same simulation with the same seed number
+# Changing that seed number for your simulation of a given system is one easy way to run an 'independent' simulation of the same system as taught in class
+# You will need to do this for your homework
+
+thermo_style    custom step vol temp press ke pe etotal enthalpy evdwl ecoul epair ebond eangle edihed eimp emol elong etail lx ly lz xy xz yz density
+thermo          ${thermofreq}
+
+fix         npt_equib all npt temp ${simulationTemp} ${simulationTemp} 100 iso ${simulationPress} ${simulationPress} 1000
+
+run 100000
+
+unfix       npt_equib
+
+fix v_adjust all deform 1 x final 0.0 26.5326 y final 0.0 24.4848 z final 0.0 17.9254 units box 
+
+run 10000
+
+unfix v_adjust 
+
+velocity all scale ${simulationTemp} 
+
+#set atom 121 vx  0.0287584 vy  0.0287584 vz  0.0287584
+
+#set atom 122 vx  0.143792 vy  0.143792 vz  0.143792
+
+#set atom 123 vx  0.143792 vy  0.143792 vz  0.143792
+
+#set atom 124 vx  0.143792 vy  0.143792 vz  0.143792
+
+#velocity all zero angular units box
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  Equilibration run <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+fix             NVT_equib all nvt temp ${simulationTemp} ${simulationTemp} 100
+
+print           "Step Density Temperature Pressure KinEng PotEng TotEng" file Properties_equib.txt
+fix             PRINT_equib all print ${printfreq} "$(v_step) $(v_density) $(v_temp) $(v_press) $(v_pe) $(v_ke) $(v_etotal) $(v_enthalpy)" append Properties_equib.txt title ""
+# The 'print' and fix print' commands as used above will create a file named 'Properties_equib.txt' which allows you to quickly make plots to test for equilibration
+
+
+run             ${NVT_equib}
+
+unfix           NVT_equib
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  Production run <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+fix             NVT_prod all nvt temp ${simulationTemp} ${simulationTemp} 100
+
+print           "Step Density Temperature Pressure KinEng PotEng TotEng" file Properties_prod.txt
+fix             PRINT_prod all print ${printfreq} "$(v_step) $(v_density) $(v_temp) $(v_press) $(v_pe) $(v_ke) $(v_etotal) $(v_enthalpy)" append Properties_prod.txt title ""
+
+dump            DUMP_file all custom ${dumpfreq} ${NAME}.lammpstrj id type x y z xu yu zu vx vy vz mol
+
+#restart         ${restartfreq} restart.${NAME}.1 restart.${NAME}.2
+
+run             ${NVT_prod}
+
+write_data      restart.${NAME}.final.data
