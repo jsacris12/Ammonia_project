@@ -89,7 +89,7 @@ timestep        1.0
 
 #minimize        1e-4 1e-6 10000 100000        # It is generally advised to energy minimize your system before creating velocities
 
-velocity	    all create ${simulationTemp} 696969 mom yes rot yes dist gaussian
+velocity	    all create ${simulationTemp} 121201 mom yes rot yes dist gaussian
 
 # The 'velocity' command line above assigns initial velocities to the atoms in our data file, see the LAMMPS 'velocity' command
 # The number '886874' is the seed number which helps LAMMPS to consistently assign the same randomized velocities for the same simulation with the same seed number

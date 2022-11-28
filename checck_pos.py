@@ -39,12 +39,12 @@ with open(x, 'r') as f:
     l = line.split(' ')
     #print(l)
     if len(l) == 13:
-      if l[1] == '1':
+      if l[1] == '2':
         #print(1)
         Ox.append(float(l[2]))
         Oy.append(float(l[3]))
         Oz.append(float(l[4]))
-      elif l[1] == '2':
+      elif l[1] == '1':
         Six.append(float(l[2]))
         Siy.append(float(l[3]))
         Siz.append(float(l[4]))
